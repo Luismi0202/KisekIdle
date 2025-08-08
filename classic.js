@@ -1,5 +1,7 @@
 const charactersList = [];
 let charactersWithLetter = [];
+let clickedCharacters = [];
+let todayCharacter = null;
 
 //READING THE JSON
 fetch("./characters.json")
@@ -87,7 +89,19 @@ document.getElementById("searchInput").addEventListener("input", function() {
 
             foundCharacters.appendChild(newChara);
             newChara.classList.add("foundChara");
-
+            
+            newChara.addEventListener("click",()=>{
+                clickedCharacters.push(character);
+                characterCorrect(character);
+            });
         }
     }
 });
+
+function characterCorrect(character){
+    if(character !== todayCharacter){
+        const results = document.getElementById("results")
+        const data = `<tr><td></td></tr>`
+        results.innerHTML = data
+    }
+}
