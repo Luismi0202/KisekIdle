@@ -11,13 +11,17 @@
     font-family: Arial, Helvetica, sans-serif;
 }
 #foundChara {
-    max-height: 300px;      
-    overflow-y: auto; 
+    max-height: 300px;
+    overflow-y: auto;
     border: 1px solid #ccc;
     padding: 8px;
     background: #fafafa;
-    width: 350px; 
+    width: 350px;
     margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 }
 #searchInput {
     width: 350px;

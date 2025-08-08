@@ -65,7 +65,7 @@ document.getElementById("searchInput").addEventListener("input", function() {
         
         for (const item of charactersWithLetter) {
             const character = item.character;
-            const newChara = document.createElement("div");
+            const newChara = document.createElement("button");
             
             const name = document.createElement("div");
             name.classList.add("charaName");
