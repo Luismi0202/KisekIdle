@@ -7,6 +7,21 @@
     font-family: italic;
     color:gray;
 }
+.correct{
+    background-color: rgb(89, 238, 89);
+}
+.incorrect{
+    background-color: rgb(228, 65, 65);
+}
+.semicorrect{
+    background-color:rgb(245, 245, 86);
+}
+.charResultImage{
+    height: 80px;
+    width: 65px;
+    border-radius: 5px;
+}
+
 .charaName{
     font-family: Arial, Helvetica, sans-serif;
 }
