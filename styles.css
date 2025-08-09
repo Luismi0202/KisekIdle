@@ -1,3 +1,18 @@
+@keyframes fadeInTd {
+    from { opacity: 0; transform: translateY(10px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+
+.fadeInTd {
+    opacity: 0;
+    animation: fadeInTd 0.4s forwards;
+}
+
+.resultHeader {
+    background-color: #dd0000;
+    font-weight: bold;
+    text-align: center;
+}
 .charaImg{
     height: 80px;
     width: 65px;
@@ -20,6 +35,18 @@
     height: 80px;
     width: 65px;
     border-radius: 5px;
+}
+
+.victoryImage{
+    height: 50px;
+    width: 45px;
+    border-radius: 5px;
+    border:solid 2px #000;
+}
+.resultRow td {
+    border-radius: 10%;
+    animation: fadeInTd 0.4s forwards;
+    text-align: center;
 }
 
 .charaName{

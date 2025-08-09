@@ -2,6 +2,11 @@ const charactersList = [];
 let charactersWithLetter = [];
 let clickedCharacters = [];
 let todayCharacter = null;
+let guessed = false;
+let tries = 0;
+let todayDate = new Date();
+
+loadGameState();
 
 //READING THE JSON
 fetch("./characters.json")
@@ -13,7 +18,7 @@ fetch("./characters.json")
             gender: character.GENDER,
             affiliation: character.AFFILIATION,
             occupation: character.OCCUPATION,
-            playable: character.PLAYABLE,
+            playable: character["PLAYABLE?"],
             birthPlace: character.BIRTH_PLACE,
             firstGame: character.FIRST_GAME_APPEARANCE,
             alias: character.ALIAS,
@@ -48,6 +53,7 @@ document.getElementById("searchInput").addEventListener("input", function() {
     
     if (searchTerm !== "") {
         for (const character of charactersList) {
+            if (clickedCharacters.includes(character)) continue; //SKIP IF ALREADY CLICKED
             const nameAndSurname = character.name.split(" ");
             const name = nameAndSurname[0]; 
             const surname = nameAndSurname[1] || ""; //THE SURNAME CAN BE EMPTY IF I DON'T PUT THE SURNAME ON THE CSV
@@ -114,47 +120,140 @@ function selectDailyCharacter(){
 }
 
 function selectCharacter(character){
+    tries++;
     let resultTable = document.getElementById("results");
-    let nameCorrect = "correct"
+
+    if (resultTable.rows.length === 0) {
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        const headers = [
+            "Character",
+            "Gender",
+            "Affiliations",
+            "Occupation",
+            "Playable",
+            "Birth Place",
+            "First Game Appearance"
+        ];
+        headers.forEach(text => {
+            const th = document.createElement("th");
+            th.textContent = text;
+            th.classList.add("resultHeader");
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        resultTable.appendChild(thead);
+    }
+
     let genderCorrect = "correct"
     let affiliationCorrect = "correct";
     let occupationCorrect = "correct"
     let playableCorrect = "correct";
     let birthPlaceCorrect = "correct";
     let firstGameCorrect = "correct";
-    
-    if (character.name !== todayCharacter.name) {
-        nameCorrect = "incorrect";
+    let correctAudio = null;
+
+    if(character !== todayCharacter){
+        if (character.gender !== todayCharacter.gender) {
+            genderCorrect = "incorrect";
+        }
+
+        const selectedAffiliations = (character.affiliation || "").split("|").map(a => a.trim());
+        const todayAffiliations = (todayCharacter.affiliation || "").split("|").map(a => a.trim());
+        const hasPartialAffiliation = selectedAffiliations.some(aff => todayAffiliations.includes(aff));
+
+        if (character.affiliation === todayCharacter.affiliation) {
+            affiliationCorrect = "correct";
+        } else if (hasPartialAffiliation) {
+            affiliationCorrect = "semicorrect";
+        } else {
+            affiliationCorrect = "incorrect";
+        }
+
+        if(character.occupation !== todayCharacter.occupation){
+            occupationCorrect = "incorrect";
+        }
+        if(character.playable !== todayCharacter.playable){
+            playableCorrect = "incorrect";
+        }
+        if(character.birthPlace !== todayCharacter.birthPlace){
+            birthPlaceCorrect = "incorrect";
+        }
+        if(character.firstGame !== todayCharacter.firstGame){
+            firstGameCorrect = "incorrect";
+        }
     }
-    
-    if (character.gender !== todayCharacter.gender) {
-        genderCorrect = "incorrect";
-    }
-    //PARA  LA AFILIACIÓN TODAVÍA NO LA PONGO PORQUE HAY MÁS DE UNA Y ESO TENGO QUE COMPROBAR TODAS
-    if(character.occupation !== todayCharacter.occupation){
-        occupationCorrect = "incorrect";
-    }
-    if(character.playable !== todayCharacter.playable){
-        playableCorrect = "incorrect";
-    }
-    if(character.birthPlace !== todayCharacter.birthPlace){
-        birthPlaceCorrect = "incorrect";
-    }
-    if(character.firstGame !== todayCharacter.firstGame){
-        firstGameCorrect = "incorrect";
+    else{
+        correctAudio = new Audio("./sounds/DINDONG.mp3");
+        guessed = true;
+        document.getElementById("victory").innerHTML = `
+        <h2>Congratulations! You guessed the character!</h2>
+        <img src="${character.image}" alt="${character.name}" class="victoryImage">
+        <p>You guessed: ${character.name}</p>
+        <p>Number of tries: ${tries}</p>
+        <p>Come back tomorrow!</p>`;
+        document.getElementById("searchInput").style.display = "none";
+        document.getElementById("foundChara").style.display = "none";
     }
 
-    resultTable.innerHTML = `<tr>
-    <td class = "${nameCorrect}">Name: ${character.name}</td>
-    <td class = "${genderCorrect}">Gender: ${character.gender}</td>
-    <td class = "${affiliationCorrect}">Affiliation: ${character.affiliation}</td>
-    <td class = "${occupationCorrect}">Occupation: ${character.occupation}</td>
-    <td class = "${playableCorrect}">Playable: ${character.playable}</td>
-    <td class = "${birthPlaceCorrect}">Birth Place: ${character.birthPlace}</td>
-    <td class = "${firstGameCorrect}">First Game Appearance: ${character.firstGame}</td>
-    <td><img src="${character.image}" alt="${character.name}" class = "charResultImage"></td>
-    </tr>`;
+    const tr = document.createElement("tr");
+    tr.classList.add("resultRow");
+    const tdData = [
+        {cls: "", html: `<img src="${character.image}" alt="${character.name}" class="charResultImage">`},
+        {cls: genderCorrect, txt: `${character.gender}`},
+        {cls: affiliationCorrect, txt: `${character.affiliation ? character.affiliation.split("|").join(", ") : "None"}`},
+        {cls: occupationCorrect, txt: `${character.occupation}`},
+        {cls: playableCorrect, txt: `${character.playable}`},
+        {cls: birthPlaceCorrect, txt: `${character.birthPlace}`},
+        {cls: firstGameCorrect, txt: `${character.firstGame}`},
+    ];
+
+    let tbody = resultTable.querySelector("tbody");
+    if (!tbody) {
+        tbody = document.createElement("tbody");
+        resultTable.appendChild(tbody);
+    }
+    tbody.insertBefore(tr,tbody.firstChild);
+
+    tdData.forEach((data, i) => {
+            const td = document.createElement("td");
+            td.classList.add("fadeInTd");
+            td.style.animationDelay = `${i * 0.15}s`;
+            if (data.cls) td.classList.add(data.cls);
+            if (data.html) {
+                td.innerHTML = data.html;
+            } else {
+                td.textContent = data.txt;
+            }
+            tr.appendChild(td);
+            saveGameState();
+    });
+
+    correctAudio?.play();
+
+    document.getElementById("foundChara").innerHTML = "";
+    document.getElementById("searchInput").value = "";
 }
 
-//HACER QUE SE PONGA AMARILLA LAS AFILIACIONES EN CASO DE QUE COINCIDA CON ALGUNA O EN ROJO
-//HACER QUE SE VAYAM AÑADIENDO LOS PERSONAJES EN LOS RESULTADOS
+function saveGameState() {
+    localStorage.setItem("resultsTable", document.getElementById("results").innerHTML);
+    localStorage.setItem("victoryDiv", document.getElementById("victory").innerHTML);
+    localStorage.setItem("shareDiv", document.getElementById("share").innerHTML);
+    localStorage.setItem("guessed", guessed ? "1" : "0");
+}
+
+function loadGameState() {
+    const results = localStorage.getItem("resultsTable");
+    const victory = localStorage.getItem("victoryDiv");
+    const share = localStorage.getItem("shareDiv");
+    const wasGuessed = localStorage.getItem("guessed") === "1";
+
+    if (results) document.getElementById("results").innerHTML = results;
+    if (victory) document.getElementById("victory").innerHTML = victory;
+    if (share) document.getElementById("share").innerHTML = share;
+    if (wasGuessed) {
+        guessed = true;
+        document.getElementById("searchInput").style.display = "none";
+        document.getElementById("foundChara").style.display = "none";
+    }
+}
