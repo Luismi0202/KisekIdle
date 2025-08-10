@@ -5,7 +5,9 @@ let todayCharacter = null;
 let guessed = false;
 let tries = 0;
 let todayDate = new Date();
-
+const squares = ["🟥","🟨","🟩"]
+const numbers = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
+let triesList = [];
 loadGameState();
 
 //READING THE JSON
@@ -145,45 +147,72 @@ function selectCharacter(character){
         resultTable.appendChild(thead);
     }
 
-    let genderCorrect = "correct"
+    let correctAudio = null;
+    let currentTry = ""
+    let genderCorrect = "correct";
     let affiliationCorrect = "correct";
-    let occupationCorrect = "correct"
+    let occupationCorrect = "correct";
     let playableCorrect = "correct";
     let birthPlaceCorrect = "correct";
     let firstGameCorrect = "correct";
-    let correctAudio = null;
 
     if(character !== todayCharacter){
         if (character.gender !== todayCharacter.gender) {
             genderCorrect = "incorrect";
+            currentTry += `${squares[0]} `;
         }
-
+        else{
+            currentTry += `${squares[2]} `;
+        }
         const selectedAffiliations = (character.affiliation || "").split("|").map(a => a.trim());
         const todayAffiliations = (todayCharacter.affiliation || "").split("|").map(a => a.trim());
         const hasPartialAffiliation = selectedAffiliations.some(aff => todayAffiliations.includes(aff));
 
         if (character.affiliation === todayCharacter.affiliation) {
-            affiliationCorrect = "correct";
+            currentTry += `${squares[2]} `;
         } else if (hasPartialAffiliation) {
             affiliationCorrect = "semicorrect";
+            currentTry += `${squares[1]} `;
         } else {
             affiliationCorrect = "incorrect";
+            currentTry += `${squares[0]} `;
         }
 
         if(character.occupation !== todayCharacter.occupation){
             occupationCorrect = "incorrect";
+            currentTry += `${squares[0]} `;
         }
+        else{
+            currentTry += `${squares[2]} `;
+        }
+
         if(character.playable !== todayCharacter.playable){
             playableCorrect = "incorrect";
+            currentTry += `${squares[0]} `;
         }
+        else{
+            currentTry += `${squares[2]} `;
+        }
+        
         if(character.birthPlace !== todayCharacter.birthPlace){
             birthPlaceCorrect = "incorrect";
+            currentTry += `${squares[0]} `;
         }
+        else{
+            currentTry += `${squares[2]} `;
+        }
+        
         if(character.firstGame !== todayCharacter.firstGame){
             firstGameCorrect = "incorrect";
+            currentTry += `${squares[0]} `;
         }
+        else{
+            currentTry += `${squares[2]} `;
+        }
+        triesList.push(currentTry);
     }
     else{
+        triesList.push("🟩 🟩 🟩 🟩 🟩 🟩")
         correctAudio = new Audio("./sounds/DINDONG.mp3");
         guessed = true;
         document.getElementById("victory").innerHTML = `
@@ -194,6 +223,7 @@ function selectCharacter(character){
         <p>Come back tomorrow!</p>`;
         document.getElementById("searchInput").style.display = "none";
         document.getElementById("foundChara").style.display = "none";
+        makeShareDiv();
     }
 
     const tr = document.createElement("tr");
@@ -235,25 +265,98 @@ function selectCharacter(character){
     document.getElementById("searchInput").value = "";
 }
 
+
 function saveGameState() {
     localStorage.setItem("resultsTable", document.getElementById("results").innerHTML);
     localStorage.setItem("victoryDiv", document.getElementById("victory").innerHTML);
     localStorage.setItem("shareDiv", document.getElementById("share").innerHTML);
     localStorage.setItem("guessed", guessed ? "1" : "0");
+    localStorage.setItem("todayDate", todayDate);
+    localStorage.setItem("triesList", JSON.stringify(triesList));
+}
+
+function isToday(date){
+    return date.getFullYear() === todayDate.getFullYear() &&
+           date.getMonth() === todayDate.getMonth() &&
+           date.getDate() === todayDate.getDate();
 }
 
 function loadGameState() {
-    const results = localStorage.getItem("resultsTable");
-    const victory = localStorage.getItem("victoryDiv");
-    const share = localStorage.getItem("shareDiv");
-    const wasGuessed = localStorage.getItem("guessed") === "1";
-
-    if (results) document.getElementById("results").innerHTML = results;
-    if (victory) document.getElementById("victory").innerHTML = victory;
-    if (share) document.getElementById("share").innerHTML = share;
-    if (wasGuessed) {
-        guessed = true;
-        document.getElementById("searchInput").style.display = "none";
-        document.getElementById("foundChara").style.display = "none";
+    const savedDate = localStorage.getItem("todayDate");
+    if(isToday(new Date(savedDate))){
+        const results = localStorage.getItem("resultsTable");
+        const victory = localStorage.getItem("victoryDiv");
+        const share = localStorage.getItem("shareDiv");
+        const wasGuessed = localStorage.getItem("guessed") === "1";
+        if (results) document.getElementById("results").innerHTML = results;
+        if (victory) document.getElementById("victory").innerHTML = victory;
+        if (share) document.getElementById("share").innerHTML = share;
+        if (wasGuessed) {
+            guessed = true;
+            document.getElementById("searchInput").style.display = "none";
+            document.getElementById("foundChara").style.display = "none";
+        }
     }
+}
+
+function makeShareDiv(){
+    const shareDiv = document.getElementById("share");
+    const shareText1 = `I guessed today's trails/kiseki character on KisekIdle in ${tries} tries!`;
+    const shareText2 = `Here's my tries:`
+    const shareText3 = `${lastTries()}`
+
+    const clipboardButton = document.createElement("button");
+    clipboardButton.textContent = "Copy";
+    clipboardButton.classList.add("clipboardButton");
+    clipboardButton.addEventListener("click", function() {
+        const shareText = `${shareText1}\n${shareText2}\n${shareText3}`;
+        navigator.clipboard.writeText(shareText).then(() => {
+            alert("Copied to clipboard!");
+        }).catch(err => {
+            console.error("Failed to copy text: ", err);
+        });
+    });
+
+    const shareButton = document.createElement("button");
+    shareButton.textContent = "Share";
+    shareButton.classList.add("shareButton");
+    shareButton.addEventListener("click", function() {
+    const shareText = `${shareText1}\n${shareText2}\n${shareText3}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+    window.open(twitterUrl, "_blank"); 
+    });
+
+    shareDiv.innerHTML = `
+    <h2 id="shareHeader">Share your results!</h2>
+    <div id= "shareText">
+    <p>${shareText1}</p>
+    <p>${shareText2}</p>
+    <pre>${shareText3}</pre>
+    </div>
+    `;
+    shareDiv.appendChild(clipboardButton);
+    shareDiv.appendChild(shareButton);
+
+}
+
+function lastTries(){
+    if(triesList.length <=5){
+        return triesList.join("\n");
+    }
+    else{
+        let listString = triesList.slice(0,5).join("\n");
+        listString += `\n and ${numbersToEmoji(triesList.length - 5)} more...`;
+        return listString;
+    }
+}
+
+function numbersToEmoji(number) {
+    let numbStr = number.toString();
+    let result = "";
+
+    for(let char of numbStr) {
+        let digit = parseInt(char);
+        result += numbers[digit];
+    }
+    return result;
 }
